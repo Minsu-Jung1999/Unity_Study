@@ -14,14 +14,14 @@ public class PlayerCombat : MonoBehaviour
     [SerializeField] AudioSource combo4;
     [SerializeField] AudioSource charging;
     [SerializeField] AudioSource flash;
-    Animator animator;
+    [SerializeField] Animator animator;
 
     bool fullChargingFlash;
 
     // Start is called before the first frame update
     void Start()
     {
-        animator = GetComponent<Animator>();    
+        //animator = GetComponent<Animator>();    
     }
 
     // Update is called once per frame
