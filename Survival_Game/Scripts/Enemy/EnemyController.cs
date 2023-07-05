@@ -9,49 +9,58 @@ public class EnemyController : Combat
 
 
     [SerializeField] Transform target;
+    [SerializeField] Camera targetCam;
     [SerializeField] float chaseRange = 5f;
     [SerializeField] float turnSpeed = 2f;
+    [SerializeField] float stunTime = 1f;
+    [SerializeField] Canvas EnermyCanvas;
 
     NavMeshAgent navMeshAgent;
     float distanceToTarget;
-
     // Start is called before the first frame update
     void Start()
     {
         navMeshAgent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        targetCam = FindObjectOfType<Camera>();
+        EnermyCanvas.enabled = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(target!=null)
+        if(target!=null && !isStun)
         {
             distanceToTarget = Vector3.Distance(target.transform.position, transform.position);
-        }
-        if (distanceToTarget <= chaseRange)
-        {
-            FaceToTarget();
-            ChaseTarget();
+            if (distanceToTarget <= chaseRange)
+            {
+                FaceToTarget();
+                ChaseTarget();
+            }
+            else
+            {
+                StopChasing();
+            }
+            if (distanceToTarget <= navMeshAgent.stoppingDistance)
+            {
+                DefaultAttack();
+            }
         }
         else
         {
-            StopChasing();
+            Debug.Log("Target is disappear");
         }
-        if (distanceToTarget <= navMeshAgent.stoppingDistance)
-        {
-            DefaultAttack();
-        }
-        
-        if(state.currentHealth <= 0)
+        if (state.currentHealth <= 0)
         {
             Destroy(gameObject);
         }
+
     }
 
     private void StopChasing()
     {
         animator.SetBool("walk", false);
+        EnermyCanvas.enabled = false;
     }
 
     private void ChaseTarget()
@@ -67,6 +76,14 @@ public class EnemyController : Combat
 
         Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * turnSpeed);
+
+        BarRotationADJ();
+        EnermyCanvas.enabled = true;
+    }
+
+    private void BarRotationADJ()
+    {
+        EnermyCanvas.transform.LookAt(targetCam.transform);
     }
 
     private void OnDrawGizmosSelected()
@@ -77,16 +94,21 @@ public class EnemyController : Combat
 
     protected override void OnTriggerEnter(Collider other)
     {
-        if(other.tag == "Katana")
-        {
-            HitDamage();
-        }
+        
         if (other.tag == "Player")
         {
             KatanaBoxCollider.enabled = false;
+            PlayerCombatController player = other.GetComponent<PlayerCombatController>();
+
+            player.HitDamage(state.currentAttackDamage);
+
         }
     }
-  
 
+    protected override IEnumerator Stun()
+    {
+        yield return new WaitForSeconds(stunTime);
+        isStun = false;
+    }
 
 }

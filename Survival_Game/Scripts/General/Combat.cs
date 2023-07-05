@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,36 +9,21 @@ public class Combat : MonoBehaviour
     [SerializeField] protected BoxCollider KatanaBoxCollider;
     [SerializeField] protected float flashDistance = 2f;
     [SerializeField] protected Transform characterBody;
-
-    //[SerializeField] protected AudioSource combo1;
-    //[SerializeField] protected AudioSource combo2;
-    //[SerializeField] protected AudioSource combo3;
-    //[SerializeField] protected AudioSource combo4;
-    //[SerializeField] protected AudioSource charging;
-    //[SerializeField] protected AudioSource flash;
-    //[SerializeField] protected AudioSource hitSound;
-    //[SerializeField] protected AudioSource shieldSound;
-    
+    protected float fixedDistance;  // 수정된 Flash 점멸 거리, 벽이 있다면 넘지 않게 하기 위함
 
     [SerializeField] Renderer render;
 
     protected Animator animator;
     protected bool fullChargingFlash;
     protected Slider hpBar;
-
+    [SerializeField]protected bool isStun;  // 적에게 맞으면 잠시 스턴이 걸린다. (플레이어는 다른 방식으로 활용할 예정)
     // Start is called before the first frame update
     void Start()
     {
         animator = GetComponent<Animator>();
         
     }
-    protected virtual void Update()
-    {
-        if(state.currentHealth <= 0)
-        {
-            Death();
-        }
-    }
+    
 
     /** 벽력일섬 준비 애니메이션 재생 */
     protected void Charging()
@@ -47,7 +33,7 @@ public class Combat : MonoBehaviour
     }
 
     /** 차징 후 공격 안 했을 경우 */
-    protected void ChrgingCancle()
+    protected void ChargingCancle()
     {
         fullChargingFlash = false;
         SoundManager.instance.StopSE(SoundManager.SoundOrder.CHARGING);
@@ -79,7 +65,7 @@ public class Combat : MonoBehaviour
         ProcessRay();
 
         // 포지션 이동하기
-        transform.Translate(flashDirection * Time.deltaTime * flashDistance);
+        transform.Translate(flashDirection * fixedDistance);
 
         // 차징하고 있다면 취소시키기 
         fullChargingFlash = false;
@@ -87,13 +73,7 @@ public class Combat : MonoBehaviour
 
     /** 레이를 쏴서 맞는 적 감지해서 Hit 애니메이션 재생시키기 */
     protected virtual void ProcessRay()
-    {
-        // 레이 쏠 방향
-        Vector3 rayDirection = new Vector3(characterBody.forward.x, 0, characterBody.forward.z).normalized;
-
-        // 레이 시작 점과 끝 점 벡터 구하기
-        Vector3 rayStartPos = new Vector3(characterBody.transform.position.x, characterBody.transform.position.y + 0.5f, characterBody.transform.position.z);
-    }
+    {}
 
     /** 기본 공격 -> 콤보로 이어짐 */
     protected void DefaultAttack()
@@ -164,25 +144,38 @@ public class Combat : MonoBehaviour
 
     #endregion
 
-    public virtual void HitDamage()
+    public virtual void HitDamage(float damage)
     {
         animator.SetBool("attackCheck", false);
+
         // 가드를 안 했을 경우
         if(!animator.GetBool("guard"))
         {
+            isStun = true;
+            StartCoroutine("Stun");
             animator.SetTrigger("hit");
             SoundManager.instance.PlaySE(SoundManager.SoundOrder.HIT);
             StartCoroutine("HitProcessing");
 
             // 체력 깎기
-            state.currentHealth -= state.currentAttackDamage;
+            state.currentHealth -= damage;
+            // UI 이미지 줄여주기
+            state.hpBar.fillAmount -= damage/state.maxHealth;
 
         }
+        // 가드 했을 경우 데미지가 0이 들어온다.
         else
         {
             ShieldBlock();
         }
 
+    }
+
+    protected virtual IEnumerator Stun()
+    {
+        // Enermy Controller  에서 구현 예정
+        yield return null;
+        isStun = true;
     }
 
     protected void Death()

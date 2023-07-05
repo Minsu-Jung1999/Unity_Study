@@ -1,37 +1,31 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CharacterState : MonoBehaviour
 {
-    [SerializeField] private float defaultHealth = 100f;   
+    [SerializeField] public float maxHealth = 100f;   
     [SerializeField] public float currentHealth;
 
-    [SerializeField] private float defaultEnergy = 100f;
+    [SerializeField] public float maxEnergy = 100f;
     [SerializeField] public float currentEnergy;
 
-    [SerializeField] private float defaultAttackDamage = 20;
+    [SerializeField] public float maxAttackDamage = 20;
     [SerializeField] public float currentAttackDamage;
+
+    [SerializeField] public Image hpBar;
+    [SerializeField] public Image energyBar;
+
 
 
     private void Awake()
     {
-        currentHealth = defaultHealth;
-        currentEnergy = defaultEnergy;
-        currentAttackDamage = defaultAttackDamage;
-    }
-
-    public float getHealth()
-    {
-        return currentHealth;
-    }
-    public float getDamage()
-    {
-        return currentAttackDamage;
-    }
-    public float getEnergy()
-    {
-        return currentEnergy;
+        currentHealth = maxHealth;
+        currentEnergy = maxEnergy;
+        currentAttackDamage = maxAttackDamage;
+        hpBar.fillAmount = 1;
+        energyBar.fillAmount = 1;
     }
 
 }
