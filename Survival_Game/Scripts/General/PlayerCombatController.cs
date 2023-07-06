@@ -43,10 +43,18 @@ public class PlayerCombatController : Combat
         }
         if (state.currentHealth <= 0)
         {
-            Destroy(gameObject);
+            PlayerDeath();
         }
     }
-
+    public void DestroyPlayer()
+    {
+        StartCoroutine("DestoryOB");
+    }
+    protected IEnumerator DestoryOB()
+    {
+        yield return new WaitForSeconds(1f);
+        Destroy(gameObject);
+    }
     /** 벽력일섬 타겟팅을 위해 레이를 쏴서 맞았는지 체크 하고 hit 모션 진행하기*/
     protected override void ProcessRay()
     {

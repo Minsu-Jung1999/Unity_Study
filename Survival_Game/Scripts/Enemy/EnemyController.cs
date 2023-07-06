@@ -29,7 +29,7 @@ public class EnemyController : Combat
     // Update is called once per frame
     void Update()
     {
-        if(target!=null && !isStun)
+        if(target!=null && !isStun && !isDeath)
         {
             distanceToTarget = Vector3.Distance(target.transform.position, transform.position);
             if (distanceToTarget <= chaseRange)
@@ -52,9 +52,17 @@ public class EnemyController : Combat
         }
         if (state.currentHealth <= 0)
         {
-            Destroy(gameObject);
+            EnemyDeath();
         }
-
+    }
+    public void DestroyEnemy()
+    {
+        StartCoroutine("DestoryOB");
+    }
+    protected IEnumerator DestoryOB()
+    {
+        yield return new WaitForSeconds(1f);
+        Destroy(gameObject);
     }
 
     private void StopChasing()

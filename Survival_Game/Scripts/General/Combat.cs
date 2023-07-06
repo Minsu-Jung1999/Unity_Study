@@ -17,6 +17,8 @@ public class Combat : MonoBehaviour
     protected bool fullChargingFlash;
     protected Slider hpBar;
     [SerializeField]protected bool isStun;  // 적에게 맞으면 잠시 스턴이 걸린다. (플레이어는 다른 방식으로 활용할 예정)
+    protected bool isDeath;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -178,10 +180,19 @@ public class Combat : MonoBehaviour
         isStun = true;
     }
 
-    protected void Death()
+    protected virtual void EnemyDeath()
     {
-        Destroy(gameObject);
+        isDeath = true;
+        animator.SetTrigger("Edeath");
     }
+    protected virtual void PlayerDeath()
+    {
+        isDeath = true;
+        animator.SetTrigger("death");
+    }
+     
+       
+
 
     private void ShieldBlock()
     {
