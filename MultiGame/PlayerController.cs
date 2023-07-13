@@ -2,11 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
+using Photon.Realtime;
+using System;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 {
-    [SerializeField] GameObject cameraHolder;
+    
+       [SerializeField] GameObject cameraHolder;
     [SerializeField] float mouseSensitivity, sprintSpeed, walkSpeed, jumpForce, smoothTime;
+    [SerializeField] Item[] items;
+
+    int itemIndex;
+    int previousItemIndex = -1;
 
     float verticalLookRotation;
     bool grounded;
@@ -17,15 +25,26 @@ public class PlayerController : MonoBehaviour
 
     PhotonView pv;
 
+    const float maxHealth = 100f;
+    float currentHealth = maxHealth;
+
+    PlayerManager playermanager;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         pv = GetComponent<PhotonView>();
+
+        playermanager = PhotonView.Find((int)pv.InstantiationData[0]).GetComponent<PlayerManager>();
     }
 
     private void Start()
     {
-        if(!pv.IsMine)
+        if(pv.IsMine)
+        {
+            EquipItem(0);
+        }
+        else 
         {
             Destroy(GetComponentInChildren<Camera>().gameObject);
             Destroy(rb);
@@ -47,6 +66,50 @@ public class PlayerController : MonoBehaviour
         Move();
 
         Jump();
+
+        for (int i = 0; i < items.Length; i++)
+        {
+            if(Input.GetKeyDown((i+1).ToString()))
+            {
+                EquipItem(i);
+                break;
+            }
+        }
+
+        if(Input.GetAxisRaw("Mouse ScrollWheel") > 0f)
+        {
+            if(itemIndex >= items.Length-1)
+            {
+                EquipItem(0);
+            }
+            else
+            {
+                EquipItem(itemIndex + 1);
+            }
+        }
+        else if(Input.GetAxisRaw("Mouse ScrollWheel") < 0f)
+        {
+            if (itemIndex <= 0)
+            {
+                EquipItem(items.Length - 1);
+            }
+            else
+            {
+                EquipItem(itemIndex - 1);
+            }
+        }
+
+        if(Input.GetMouseButtonDown(0))
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            items[itemIndex].Use();
+        }
+
+        if (transform.position.y <= -3f)
+        {
+            Die();
+        }
     }
 
     private void Jump()
@@ -54,6 +117,36 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && grounded)
         {
             rb.AddForce(transform.up * jumpForce);
+        }
+    }
+
+    void EquipItem(int _index)
+    {
+        if (_index == previousItemIndex)
+            return;
+        itemIndex = _index;
+        items[itemIndex].itemGameObject.SetActive(true);
+        if(previousItemIndex != -1)
+        {
+            items[previousItemIndex].itemGameObject.SetActive(false);
+        }
+
+        previousItemIndex = itemIndex;
+
+        if(pv.IsMine)
+        {
+            Hashtable hash = new Hashtable();
+            hash.Add("itemIndex", itemIndex);
+            PhotonNetwork.LocalPlayer.SetCustomProperties(hash);    // using Hashtable = ExitGames.Client.Photon.Hashtable;
+        }
+
+    }
+
+    public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
+    {
+        if(!pv.IsMine && targetPlayer == pv.Owner)
+        {
+            EquipItem((int)changedProps["itemIndex"]);
         }
     }
 
@@ -76,5 +169,28 @@ public class PlayerController : MonoBehaviour
     public void SetGroundedState(bool _grounded)
     {
         grounded = _grounded;
+    }
+
+    // This will run on the shooter's computer
+    public void TakeDamage(float damage)
+    {
+        pv.RPC("RPC_TakeDamage", RpcTarget.All, damage);
+    }
+
+    // This will run on everyone's computer, but the !pv.Ismine
+    [PunRPC]
+    void RPC_TakeDamage(float damage)
+    {
+        if (!pv.IsMine) return;
+        currentHealth -= damage;
+        if(currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        playermanager.Die();
     }
 }
