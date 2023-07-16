@@ -148,7 +148,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 
     public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
     {
-        if(!pv.IsMine && targetPlayer == pv.Owner)
+        if(changedProps.ContainsKey("itemIndex") &&!pv.IsMine && targetPlayer == pv.Owner)
         {
             EquipItem((int)changedProps["itemIndex"]);
         }
@@ -178,14 +178,13 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
     // This will run on the shooter's computer
     public void TakeDamage(float damage)
     {
-        pv.RPC("RPC_TakeDamage", RpcTarget.All, damage);
+        pv.RPC(nameof(RPC_TakeDamage), pv.Owner, damage);
     }
 
     // This will run on everyone's computer, but the !pv.Ismine
     [PunRPC]
-    void RPC_TakeDamage(float damage)
+    void RPC_TakeDamage(float damage, PhotonMessageInfo info)
     {
-        if (!pv.IsMine) return;
         currentHealth -= damage;
 
         healthbarImage.fillAmount = currentHealth / maxHealth;
@@ -193,6 +192,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
         if (currentHealth <= 0)
         {
             Die();
+            PlayerManager.Find(info.Sender).GetKill();
         }
     }
 
