@@ -27,6 +27,7 @@ public class PlayerData     // 저장할 데이터 생성
     public int level = 1;
     public int coin = 1000;
     public int weapon = -1;
+    public Vector3 playerPosition = Vector3.zero;
 }
 
 public class DataManager : MonoBehaviour
@@ -70,8 +71,16 @@ public class DataManager : MonoBehaviour
 
     public void SaveData()
     {
+        PlayerController playercontroller = FindAnyObjectByType<PlayerController>();
+        if(playercontroller)
+        {
+            print("Found!");
+            player.playerPosition = playercontroller.transform.position;
+        }
+
         string data = JsonUtility.ToJson(player, true); // 데이터를 제이슨으로 변환
         File.WriteAllText(path + fileName, data);
+        print(path);
     }
 
     public void LoadData()
